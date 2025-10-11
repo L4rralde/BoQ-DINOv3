@@ -41,8 +41,15 @@ class DinoV2(torch.nn.Module):
         for param in self.dino.parameters():
             param.requires_grad = False
         
+        if self.unfreeze_n_blocks == 0:
+            self.freezed_blocks = self.dino.blocks
+            self.ftuning_blocks = []
+        else:
+            self.freezed_blocks = self.dino.blocks[:-self.unfreeze_n_blocks]
+            self.ftuning_blocks = self.dino.blocks[-unfreeze_n_blocks:]
+
         # unfreeze the last few blocks
-        for block in self.dino.blocks[ -unfreeze_n_blocks : ]:
+        for block in self.ftuning_blocks:
             for param in block.parameters():
                 param.requires_grad = True
         
@@ -57,14 +64,15 @@ class DinoV2(torch.nn.Module):
         # No need to compute gradients for frozen layers
         with torch.no_grad():
             x = self.dino.prepare_tokens_with_masks(x)
-            for blk in self.dino.blocks[ : -self.unfreeze_n_blocks]:
+            for blk in self.freezed_blocks:
                 x = blk(x)
 
         # Last blocks are trained
-        for blk in self.dino.blocks[-self.unfreeze_n_blocks : ]:
+        for blk in self.ftuning_blocks:
             x = blk(x)
             
-        
+        cls_token = x[:, 0]
+
         x = x[:, 1:] # remove the [CLS] token
         
         # reshape the output tensor to B, C, H, W
