@@ -15,13 +15,15 @@ class DinoV3(torch.nn.Module):
         dinov3_repo_path: os.PathLike,
         backbone_name: str="dinov3_vitb16",
         unfreeze_n_blocks: int=2,
-        reshape_output: bool=True
+        reshape_output: bool=True,
+        norm_layer: bool=False
     ):
         super().__init__()
         
         self.backbone_name = backbone_name
         self.unfreeze_n_blocks = unfreeze_n_blocks
         self.reshape_output = reshape_output
+        self.norm_layer = norm_layer
 
         # make sure the backbone_name is in the available models
         if self.backbone_name not in self.AVAILABLE_MODELS:
@@ -73,9 +75,11 @@ class DinoV3(torch.nn.Module):
         for blk in self.trainable_blocks:
             x = blk(x, rope_sincos)
 
-        #x = self.dino.norm(x)
+        norm_x = self.dino.norm(x)
+        if self.norm_layer:
+            x = norm_x
 
-        class_token = x[:, 0]
+        class_token = norm_x[:, 0]
         register_token = x[:, 1: self.dino.n_storage_tokens + 1] #Probably it adds nothing for inference
 
         features = x[:, self.dino.n_storage_tokens + 1 :]

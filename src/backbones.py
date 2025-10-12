@@ -23,12 +23,14 @@ class DinoV2(torch.nn.Module):
         backbone_name="dinov2_vitb14",
         unfreeze_n_blocks=2,
         reshape_output=True,
+        norm_layer=False
     ):
         super().__init__()
         
         self.backbone_name = backbone_name
         self.unfreeze_n_blocks = unfreeze_n_blocks
         self.reshape_output = reshape_output
+        self.norm_layer = norm_layer
         
         # make sure the backbone_name is in the available models
         if self.backbone_name not in self.AVAILABLE_MODELS:
@@ -71,8 +73,12 @@ class DinoV2(torch.nn.Module):
         # Last blocks are trained
         for blk in self.trainable_blocks:
             x = blk(x)
+
+        norm_x = self.dino.norm(x)
+        if self.norm_layer:
+            x = norm_x
             
-        cls_token = x[:, 0]
+        cls_token = norm_x[:, 0]
 
         x = x[:, 1:] # remove the [CLS] token
         

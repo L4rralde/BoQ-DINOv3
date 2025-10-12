@@ -23,7 +23,7 @@ from src.dataloaders.datamodule import VPRDataModule
 class HyperParams:
     def __init__(self):
         ## Backbone config:
-        self.backbone_name: str = "dinov3_vitb16"    # resnet18, resnet50, dinov2_vits14, dinov2_vitb14, dinov2_vitl14, dinov3_vitb16
+        self.backbone_name: str = "dinov2_vitb14"    # resnet18, resnet50, dinov2_vits14, dinov2_vitb14, dinov2_vitl14, dinov3_vitb16
         self.unfreeze_n_blocks: int = 0              # number of blocks to unfreeze in the backbone
         
         ## BoQ config:
@@ -61,7 +61,10 @@ class HyperParams:
         self.silent: bool = False            # disable console output
         self.compile: bool = False           # compile the model using torch.compile() [experimental]
         self.seed: int = 2024                # random seed for reproducibility
-        self.cls_token: bool = True
+
+        ##DINO
+        self.cls_token: bool = False
+        self.norm_layer: bool = True
 
 def train(hparams, dev_mode=False):
     seed_everything(hparams.seed, workers=True)
@@ -74,7 +77,8 @@ def train(hparams, dev_mode=False):
         backbone = DinoV3(
             dinov3_repo_path,
             backbone_name=hparams.backbone_name,
-            unfreeze_n_blocks=hparams.unfreeze_n_blocks
+            unfreeze_n_blocks=hparams.unfreeze_n_blocks,
+            norm_layer=hparams.norm_layer
         )
         train_img_size = (256, 256)
         val_img_size = (368, 368)
@@ -84,7 +88,11 @@ def train(hparams, dev_mode=False):
 
     # Instantiate the backbone and define the image size for training and validation
     elif "dinov2" in hparams.backbone_name:
-        backbone = DinoV2(backbone_name=hparams.backbone_name, unfreeze_n_blocks=hparams.unfreeze_n_blocks)
+        backbone = DinoV2(
+            backbone_name=hparams.backbone_name,
+            unfreeze_n_blocks=hparams.unfreeze_n_blocks,
+            norm_layer=hparams.norm_layer
+        )
         train_img_size = (224, 224)
         val_img_size = (322, 322)
         hparams.backbone_name = backbone.backbone_name # in case the user passed dinov2 without the version
@@ -218,7 +226,9 @@ def parse_args():
     parser.add_argument('--unfreeze_n', type=int, help='Number of blocks to unfreeze in the backbone.')
     parser.add_argument("--dim",        type=int, help="Output dimensionality.")
 
+    #DINO
     parser.add_argument('--cls_token',  action='store_true', help='Append ViT cls token to output of BoQ Model')
+    parser.add_argument('--norm_layer',  action='store_true', help='Use final norm layer of DINO')
 
     return parser.parse_args()
 
@@ -253,5 +263,7 @@ if __name__ == "__main__":
         hparams.output_dim = args.dim
     if args.cls_token:
         hparams.cls_token = args.cls_token
+    if args.norm_layer:
+        hparams.norm_layer = args.norm_layer
     
     train(hparams, dev_mode=args.dev)
