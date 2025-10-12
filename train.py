@@ -23,7 +23,7 @@ from src.dataloaders.datamodule import VPRDataModule
 class HyperParams:
     def __init__(self):
         ## Backbone config:
-        self.backbone_name: str = "dinov3_vitb16"    # resnet18, resnet50, dinov2_vits14, dinov2_vitl14, dinov3_vitb16
+        self.backbone_name: str = "dinov3_vitb16"    # resnet18, resnet50, dinov2_vits14, dinov2_vitb14, dinov2_vitl14, dinov3_vitb16
         self.unfreeze_n_blocks: int = 0              # number of blocks to unfreeze in the backbone
         
         ## BoQ config:
@@ -61,6 +61,7 @@ class HyperParams:
         self.silent: bool = False            # disable console output
         self.compile: bool = False           # compile the model using torch.compile() [experimental]
         self.seed: int = 2024                # random seed for reproducibility
+        self.cls_token: bool = True
 
 def train(hparams, dev_mode=False):
     seed_everything(hparams.seed, workers=True)
@@ -120,6 +121,7 @@ def train(hparams, dev_mode=False):
         warmup_epochs=hparams.warmup_epochs,
         milestones=hparams.milestones,
         silent=hparams.silent,
+        append_cls_token=hparams.cls_token,
     )
     
     if hparams.compile:
@@ -216,6 +218,8 @@ def parse_args():
     parser.add_argument('--unfreeze_n', type=int, help='Number of blocks to unfreeze in the backbone.')
     parser.add_argument("--dim",        type=int, help="Output dimensionality.")
 
+    parser.add_argument('--cls_token',  action='store_true', help='Append ViT cls token to output of BoQ Model')
+
     return parser.parse_args()
 
 
@@ -247,5 +251,7 @@ if __name__ == "__main__":
         hparams.unfreeze_n_blocks = args.unfreeze_n
     if args.dim:
         hparams.output_dim = args.dim
+    if args.cls_token:
+        hparams.cls_token = args.cls_token
     
     train(hparams, dev_mode=args.dev)

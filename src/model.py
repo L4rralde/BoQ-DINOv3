@@ -23,6 +23,7 @@ class BoQModel(L.LightningModule):
             warmup_epochs=10,
             milestones=[10, 20],
             silent=False,
+            append_cls_token: bool=False
         ):
         super().__init__()
         self.backbone = backbone
@@ -37,6 +38,10 @@ class BoQModel(L.LightningModule):
         # init loss function and miner
         self.ms_loss = losses.MultiSimilarityLoss(alpha=1, beta=50, base=0.)
         self.ms_miner = miners.MultiSimilarityMiner(epsilon=0.1)
+
+        if append_cls_token and not 'dino' in self.backbone.backbone_name:
+            raise ValueError("By the moment, only DINO backbones support appending cls token")
+        self.append_cls_token = append_cls_token
 
     def configure_optimizers(self):
         optimizer_params = [
@@ -69,8 +74,13 @@ class BoQModel(L.LightningModule):
         return loss
     
     def forward(self, x):
-        x = self.backbone(x)
+        backbone_pred = self.backbone(x)
+        x = backbone_pred['features']
+        cls = backbone_pred.get('cls', None)
         x, attns = self.aggregator(x)
+
+        if self.append_cls_token and cls is not None:
+            x = torch.cat((cls, x), dim=1)
         return x, attns
     
     def training_step(self, batch, batch_idx):

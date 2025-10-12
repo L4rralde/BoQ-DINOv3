@@ -81,7 +81,10 @@ class DinoV2(torch.nn.Module):
             _, _, C = x.shape # or C = self.embed_dim
             patch_size = self.patch_size
             x = x.permute(0, 2, 1).view(B, C, H // patch_size, W // patch_size)
-        return x
+        return {
+            'features': x,
+            'cls': cls_token
+        }
     
     
 class ResNet(nn.Module):
@@ -151,4 +154,6 @@ class ResNet(nn.Module):
             self.out_channels = resnet.layer3[-1].conv3.out_channels
 
     def forward(self, x):
-        return self.net(x)
+        return {
+            'features': self.net(x)
+        }

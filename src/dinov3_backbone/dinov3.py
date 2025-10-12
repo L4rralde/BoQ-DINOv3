@@ -84,4 +84,8 @@ class DinoV3(torch.nn.Module):
             patch_size = self.patch_size
             features = features.permute(0, 2, 1).view(B, C, h // patch_size, w // patch_size)
 
-        return features
+        return {
+            'features': features,
+            'cls': class_token,
+            'registers': register_token
+        }
