@@ -42,18 +42,19 @@ class DinoV2(torch.nn.Module):
             param.requires_grad = False
         
         if self.unfreeze_n_blocks == 0:
-            self.freezed_blocks = self.dino.blocks
-            self.ftuning_blocks = []
+            self.frozen_blocks = self.dino.blocks
+            self.trainable_blocks = []
         else:
-            self.freezed_blocks = self.dino.blocks[:-self.unfreeze_n_blocks]
-            self.ftuning_blocks = self.dino.blocks[-unfreeze_n_blocks:]
+            self.frozen_blocks = self.dino.blocks[:-self.unfreeze_n_blocks]
+            self.trainable_blocks = self.dino.blocks[-unfreeze_n_blocks:]
 
         # unfreeze the last few blocks
-        for block in self.ftuning_blocks:
+        for block in self.trainable_blocks:
             for param in block.parameters():
                 param.requires_grad = True
         
         self.out_channels = self.dino.embed_dim
+        print("Out channels", self.out_channels)
         
     @property
     def patch_size(self):
@@ -64,11 +65,11 @@ class DinoV2(torch.nn.Module):
         # No need to compute gradients for frozen layers
         with torch.no_grad():
             x = self.dino.prepare_tokens_with_masks(x)
-            for blk in self.freezed_blocks:
+            for blk in self.frozen_blocks:
                 x = blk(x)
 
         # Last blocks are trained
-        for blk in self.ftuning_blocks:
+        for blk in self.trainable_blocks:
             x = blk(x)
             
         cls_token = x[:, 0]
