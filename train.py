@@ -5,6 +5,7 @@
 #
 # See LICENSE file in the project root.
 # ----------------------------------------------------------------------------
+import os
 
 import argparse
 import torch
@@ -14,6 +15,7 @@ from lightning.pytorch.loggers import TensorBoardLogger
 
 from src.utils import display_datasets_stats
 from src.backbones import DinoV2, ResNet
+from src.dinov3_backbone import DinoV3
 from src.boq import BoQ
 from src.model import BoQModel
 from src.dataloaders.datamodule import VPRDataModule
@@ -21,8 +23,8 @@ from src.dataloaders.datamodule import VPRDataModule
 class HyperParams:
     def __init__(self):
         ## Backbone config:
-        self.backbone_name: str = "dinov2_vitb14"    # resnet18, resnet50, dinov2_vits14, dinov2_vitl14
-        self.unfreeze_n_blocks: int = 2              # number of blocks to unfreeze in the backbone
+        self.backbone_name: str = "dinov3_vitb16"    # resnet18, resnet50, dinov2_vits14, dinov2_vitl14, dinov3_vitb16
+        self.unfreeze_n_blocks: int = 0              # number of blocks to unfreeze in the backbone
         
         ## BoQ config:
         self.channel_proj: int = 512
@@ -33,8 +35,8 @@ class HyperParams:
         ## Datasets:
         # NOTE: if you already have OpenVPRLab, you can set the path to the datasets from there
         # otherwise use the dowload scripts in `scripts/` to download to `data/` folder 
-        self.gsv_cities_path: str = "../OpenVPRLab/data/train/gsv-cities"    # path to gsv-cities in OpenVPRLab
-        # gsv_cities_path: str = "./data/train/gsv-cities"                   # or path to gsv-cities in this project
+        # self.gsv_cities_path: str = "../OpenVPRLab/data/train/gsv-cities"    # path to gsv-cities in OpenVPRLab
+        self.gsv_cities_path: str = "./data/train/gsv-cities"                   # or path to gsv-cities in this project
         
         self.cities: str | list = "all" # train on all cities
         # self.cities: str | list = ["Bangkok", "Boston", "PRS"] # train on a subset of cities (check the gsv-cities folder)
@@ -63,8 +65,24 @@ class HyperParams:
 def train(hparams, dev_mode=False):
     seed_everything(hparams.seed, workers=True)
     
+    if "dinov3" in hparams.backbone_name:
+        dinov3_repo_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            'submodules', 'dinov3'
+        )
+        backbone = DinoV3(
+            dinov3_repo_path,
+            backbone_name=hparams.backbone_name,
+            unfreeze_n_blocks=hparams.unfreeze_n_blocks
+        )
+        train_img_size = (256, 256)
+        val_img_size = (368, 368)
+        hparams.backbone_name = backbone.backbone_name
+        hparams.train_img_size = train_img_size
+        hparams.val_img_size = val_img_size
+
     # Instantiate the backbone and define the image size for training and validation
-    if "dinov2" in hparams.backbone_name:
+    elif "dinov2" in hparams.backbone_name:
         backbone = DinoV2(backbone_name=hparams.backbone_name, unfreeze_n_blocks=hparams.unfreeze_n_blocks)
         train_img_size = (224, 224)
         val_img_size = (322, 322)
