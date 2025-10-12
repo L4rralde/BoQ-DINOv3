@@ -11,6 +11,8 @@ import lightning as L
 from pytorch_metric_learning import losses, miners
 
 from src import utils
+from src.projection import ProjectionHead
+
 
 class BoQModel(L.LightningModule):
     def __init__(
@@ -39,9 +41,13 @@ class BoQModel(L.LightningModule):
         self.ms_loss = losses.MultiSimilarityLoss(alpha=1, beta=50, base=0.)
         self.ms_miner = miners.MultiSimilarityMiner(epsilon=0.1)
 
-        if append_cls_token and not 'dino' in self.backbone.backbone_name:
-            raise ValueError("By the moment, only DINO backbones support appending cls token")
         self.append_cls_token = append_cls_token
+        if self.append_cls_token and not 'dino' in self.backbone.backbone_name:
+            raise ValueError("By the moment, only DINO backbones support appending cls token")
+
+        self.projection_head = None
+        if self.append_cls_token:
+            self.projection_head = ProjectionHead(self.backbone.out_channels)            
 
     def configure_optimizers(self):
         optimizer_params = [
@@ -76,11 +82,13 @@ class BoQModel(L.LightningModule):
     def forward(self, x):
         backbone_pred = self.backbone(x)
         x = backbone_pred['features']
-        cls = backbone_pred.get('cls', None)
         x, attns = self.aggregator(x)
 
-        if self.append_cls_token and cls is not None:
+        if self.append_cls_token:
+            cls = backbone_pred['cls']
+            cls = self.projection_head(cls)
             x = torch.cat((cls, x), dim=1)
+
         return x, attns
     
     def training_step(self, batch, batch_idx):
