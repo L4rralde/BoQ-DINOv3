@@ -31,6 +31,12 @@ class DinoV2(torch.nn.Module):
         self.unfreeze_n_blocks = unfreeze_n_blocks
         self.reshape_output = reshape_output
         self.norm_layer = norm_layer
+
+        print("Using DINOv2 with:")
+        print(f" - backbone_name: {backbone_name}")
+        print(f" - unfreeze_n_blocks: {unfreeze_n_blocks}")
+        print(f" - reshape_output: {reshape_output}")
+        print(f" - norm_layer: {norm_layer}")
         
         # make sure the backbone_name is in the available models
         if self.backbone_name not in self.AVAILABLE_MODELS:
