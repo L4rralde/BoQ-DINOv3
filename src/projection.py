@@ -12,6 +12,7 @@ class ProjectionHead(torch.nn.Module):
             torch.nn.Linear(input_size, hidden_size),
             torch.nn.LeakyReLU(),
             torch.nn.Linear(hidden_size, output_size),
+            torch.nn.Sigmoid()
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

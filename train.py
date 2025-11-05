@@ -64,7 +64,7 @@ class HyperParams:
 
         ##DINO
         self.cls_token: bool = False
-        self.norm_layer: bool = True
+        self.norm_layer: bool = False
 
 def train(hparams, dev_mode=False):
     seed_everything(hparams.seed, workers=True)
