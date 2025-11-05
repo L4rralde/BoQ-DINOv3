@@ -91,20 +91,18 @@ def get_trained_boq(backbone_name="resnet50", output_dim=16384):
 
 
 
-def get_dinov3_boq(model_name="dinov3"):
+def get_dinov3_boq(model_name="dinov3", dinov3_repo_path=None):
     MODEL_URLS = {
         "dinov2": "https://github.com/L4rralde/BoQ-DINOv3/releases/download/dinov3_exp1/dinov2.ckpt",
         "dinov3": "https://github.com/L4rralde/BoQ-DINOv3/releases/download/dinov3_exp1/dinov3.ckpt",
         "dinov3_norm": "https://github.com/L4rralde/BoQ-DINOv3/releases/download/dinov3_exp1/dinov3_norm.ckpt"
     }
     if model_name not in MODEL_URLS:
-        raise ValueError(f"backbone_name should be one of {list(MODEL_URLS.keys())}")
+        raise ValueError(f"model_name should be one of {list(MODEL_URLS.keys())}")
+    if "dinov3" in model_name and dinov3_repo_path is None:
+        raise ValueError("When using dinov3, path to dinov3 repo must be passed: e.g., get_dinov3_boq(model_name, dinov3_repo_path)")
 
     if "dinov3" in model_name:
-        dinov3_repo_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            'submodules', 'dinov3'
-        )
         backbone = DinoV3(
             dinov3_repo_path,
             backbone_name='dinov3_vitb16',
