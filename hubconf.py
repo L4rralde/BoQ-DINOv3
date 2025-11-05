@@ -10,7 +10,7 @@ sys.path.append(os.path.join(boq_root, "src"))
 import torch
 from backbones import ResNet, DinoV2
 from boq import BoQ
-from src.dinov3_backbone import DinoV3
+from dinov3_backbone import DinoV3
 
     
 
@@ -91,31 +91,31 @@ def get_trained_boq(backbone_name="resnet50", output_dim=16384):
 
 
 
-def get_dinov3_boq(backbone_name="dinov3"):
+def get_dinov3_boq(model_name="dinov3"):
     MODEL_URLS = {
         "dinov2": "https://github.com/L4rralde/BoQ-DINOv3/releases/download/dinov3_exp1/dinov2.ckpt",
         "dinov3": "https://github.com/L4rralde/BoQ-DINOv3/releases/download/dinov3_exp1/dinov3.ckpt",
         "dinov3_norm": "https://github.com/L4rralde/BoQ-DINOv3/releases/download/dinov3_exp1/dinov3_norm.ckpt"
     }
-    if backbone_name not in MODEL_URLS:
+    if model_name not in MODEL_URLS:
         raise ValueError(f"backbone_name should be one of {list(MODEL_URLS.keys())}")
 
-    if "dinov3" in backbone_name:
+    if "dinov3" in model_name:
         dinov3_repo_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             'submodules', 'dinov3'
         )
         backbone = DinoV3(
             dinov3_repo_path,
-            backbone_name=backbone_name,
+            backbone_name='dinov3_vitb16',
             unfreeze_n_blocks=0,
-            norm_layer=(backbone_name == "dinov3_norm")
+            norm_layer=(model_name == "dinov3_norm")
         )
 
     # Instantiate the backbone and define the image size for training and validation
-    elif "dinov2" in backbone_name:
+    elif "dinov2" in model_name:
         backbone = DinoV2(
-            backbone_name=backbone_name,
+            backbone_name='dinov2_vitb14',
             unfreeze_n_blocks=0,
             norm_layer=False
         )
@@ -136,11 +136,10 @@ def get_dinov3_boq(backbone_name="dinov3"):
         aggregator=aggregator
     )
 
-    vpr_model.load_state_dict(
-        torch.hub.load_state_dict_from_url(
-            MODEL_URLS[backbone_name],
-            map_location=torch.device('cpu')
-        )
+    checkpoint = torch.hub.load_state_dict_from_url(
+        MODEL_URLS[model_name],
+        map_location=torch.device('cpu')
     )
+    vpr_model.load_state_dict(checkpoint['state_dict'])
 
     return vpr_model
