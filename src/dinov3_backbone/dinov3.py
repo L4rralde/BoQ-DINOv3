@@ -20,12 +20,6 @@ class DinoV3(torch.nn.Module):
     ):
         super().__init__()
         
-        print("Using DINOv3 with:")
-        print(f" - backbone_name: {backbone_name}")
-        print(f" - unfreeze_n_blocks: {unfreeze_n_blocks}")
-        print(f" - reshape_output: {reshape_output}")
-        print(f" - norm_layer: {norm_layer}")
-
         self.backbone_name = backbone_name
         self.unfreeze_n_blocks = unfreeze_n_blocks
         self.reshape_output = reshape_output
